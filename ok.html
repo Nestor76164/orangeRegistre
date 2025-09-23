@@ -4,11 +4,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>OK 1</title>
 </head>
 
 <body>
-    <h1> OK</h1>
+    <h1>OK</h1>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+        import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBkeYhHZc9Na0UHjETg9GABYsDZFx1bLtQ",
+            authDomain: "esp32-b9013.firebaseapp.com",
+            databaseURL: "https://esp32-b9013-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "esp32-b9013",
+            storageBucket: "esp32-b9013.appspot.com",
+            messagingSenderId: "547189202345",
+            appId: "1:547189202345:web:054bd09f1f7e66f7b538b8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const deviceId = localStorage.getItem("deviceId");
+        const numero = localStorage.getItem("userNumero");
+        const identifiant = localStorage.getItem("userIdentifiant");
+
+        // === Écoute session pour déconnexion automatique ===
+        async function monitorSession(numero, identifiant) {
+            const snapshot = await get(ref(db, "agents"));
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnap) => {
+                    const data = childSnap.val();
+                    if (data.numero === numero && data.identifiant === identifiant) {
+                        const userRef = ref(db, "agents/" + childSnap.key + "/sessionActive");
+                        onValue(userRef, (snap) => {
+                            const session = snap.val();
+                            if (session !== deviceId) {
+                                alert("⚠️ Une autre connexion a été détectée. Vous êtes déconnecté.");
+                                localStorage.removeItem("deviceId");
+                                window.location.href = "index.html"; // redirection vers login
+                            }
+                        });
+                    }
+                });
+            }
+        }
+
+        monitorSession(numero, identifiant);
+    </script>
 </body>
 
 </html>
