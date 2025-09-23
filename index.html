@@ -158,6 +158,23 @@
             const errorMessage = document.getElementById("errorMessage");
 
             try {
+                // 🔍 Vérifier d'abord si l'utilisateur est dans agents_interdits
+                const interditsSnap = await get(ref(db, "agents_interdits"));
+                if (interditsSnap.exists()) {
+                    let bloqué = false;
+                    interditsSnap.forEach((childSnap) => {
+                        const data = childSnap.val();
+                        if (data.numero === numero && data.identifiant === identifiant) {
+                            bloqué = true;
+                        }
+                    });
+                    if (bloqué) {
+                        errorMessage.textContent = "⚠️ Compte bloqué pour tentative de partage de compte.";
+                        return; // stoppe ici
+                    }
+                }
+
+                // ✅ Vérification normale dans agents
                 const snapshot = await get(ref(db, "agents"));
                 if (snapshot.exists()) {
                     let foundUser = null;
@@ -178,7 +195,7 @@
                                 raison: "Partage de compte détecté"
                             });
                             await remove(ref(db, "agents/" + foundUser.name));
-                            errorMessage.textContent = "⚠️ Compte bloqué pour tentative de partage.";
+                            errorMessage.textContent = "⚠️ Compte bloqué pour tentative de partage de compte.";
                         } else {
                             // ✅ Connexion réussie → enregistrer session
                             await set(ref(db, "agents/" + foundUser.name + "/sessionActive"), deviceId);
@@ -196,6 +213,7 @@
             }
         });
     </script>
+
 
 </body>
 
