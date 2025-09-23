@@ -134,7 +134,34 @@
         const deviceId = localStorage.getItem("deviceId") || "device_" + Math.random().toString(36).substr(2, 9);
         localStorage.setItem("deviceId", deviceId);
 
-        // === Vérification si déjà connecté sur cet appareil ===
+        //========================
+
+        // === Écoute de session active pour cet utilisateur ===
+        async function monitorSession(numero, identifiant) {
+            const snapshot = await get(ref(db, "agents"));
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnap) => {
+                    const data = childSnap.val();
+                    if (data.numero === numero && data.identifiant === identifiant) {
+                        const userRef = ref(db, "agents/" + childSnap.key + "/sessionActive");
+                        // écoute temps réel
+                        onValue(userRef, (snap) => {
+                            const session = snap.val();
+                            if (session !== deviceId) {
+                                alert("⚠️ Une autre connexion a été détectée. Vous êtes déconnecté.");
+                                localStorage.removeItem("deviceId");
+                                window.location.href = "index.html"; // redirection vers login
+                            }
+                        });
+                    }
+                });
+            }
+        }
+
+
+        //========================
+
+        // === Vérification si déjà connecté sur cet appareil ===  foundUser
         async function checkAutoLogin() {
             const snapshot = await get(ref(db, "agents"));
             if (snapshot.exists()) {
@@ -199,6 +226,7 @@
                         } else {
                             // ✅ Connexion réussie → enregistrer session
                             await set(ref(db, "agents/" + foundUser.name + "/sessionActive"), deviceId);
+                            monitorSession(numero, identifiant); // <-- la session pour déconnexion auto
                             window.location.href = "ok.html"; // redirection vers ta page
                         }
                     } else {
