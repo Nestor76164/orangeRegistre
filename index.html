@@ -10,7 +10,6 @@
             margin: 0;
             font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
             background-color: #000;
-            /* fond noir */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -19,7 +18,6 @@
 
         .login-container {
             background-color: #111;
-            /* gris foncé */
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
@@ -85,10 +83,10 @@
             background-color: #e65c00;
         }
 
-        .footer-text {
-            margin-top: 20px;
-            font-size: 12px;
-            color: #aaa;
+        .error {
+            color: red;
+            margin-top: 15px;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -99,19 +97,106 @@
             <img src="logo2.png" alt="Logo Orange">
         </div>
         <h2>Connexion</h2>
-        <form>
+        <form id="loginForm">
             <div class="input-group">
                 <label for="numero">Numéro</label>
-                <input type="text" id="numero" name="numero" placeholder="Entrez votre numéro" required>
+                <input type="text" id="numero" placeholder="Entrez votre numéro" required>
             </div>
             <div class="input-group">
                 <label for="identifiant">Identifiant</label>
-                <input type="text" id="identifiant" name="identifiant" placeholder="Entrez votre identifiant" required>
+                <input type="text" id="identifiant" placeholder="Entrez votre identifiant" required>
             </div>
             <button type="submit" class="login-btn">Se connecter</button>
+            <div id="errorMessage" class="error"></div>
         </form>
-        <div class="footer-text">© Orange 2025 - Authentification sécurisée</div>
     </div>
+
+    <!-- Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+        import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-database.js";
+
+        // === Configuration Firebase ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyBkeYhHZc9Na0UHjETg9GABYsDZFx1bLtQ",
+            authDomain: "esp32-b9013.firebaseapp.com",
+            databaseURL: "https://esp32-b9013-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "esp32-b9013",
+            storageBucket: "esp32-b9013.appspot.com",
+            messagingSenderId: "547189202345",
+            appId: "1:547189202345:web:054bd09f1f7e66f7b538b8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // === Générer un deviceId unique par appareil ===
+        const deviceId = localStorage.getItem("deviceId") || "device_" + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem("deviceId", deviceId);
+
+        // === Vérification si déjà connecté sur cet appareil ===
+        async function checkAutoLogin() {
+            const snapshot = await get(ref(db, "agents"));
+            if (snapshot.exists()) {
+                snapshot.forEach((childSnap) => {
+                    const data = childSnap.val();
+                    if (data.sessionActive === deviceId) {
+                        // Déjà connecté → accès direct
+                        window.location.href = "ok.html";
+                    }
+                });
+            }
+        }
+        checkAutoLogin();
+
+        // === Gestion du formulaire login ===
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const numero = document.getElementById("numero").value.trim();
+            const identifiant = document.getElementById("identifiant").value.trim();
+            const errorMessage = document.getElementById("errorMessage");
+
+            try {
+                const snapshot = await get(ref(db, "agents"));
+                if (snapshot.exists()) {
+                    let foundUser = null;
+
+                    snapshot.forEach((childSnap) => {
+                        const data = childSnap.val();
+                        if (data.numero === numero && data.identifiant === identifiant) {
+                            foundUser = { name: childSnap.key, ...data };
+                        }
+                    });
+
+                    if (foundUser) {
+                        if (foundUser.sessionActive && foundUser.sessionActive !== deviceId) {
+                            // 🚨 Tentative de double connexion → bannir
+                            await set(ref(db, "agents_interdits/" + foundUser.name), {
+                                numero: foundUser.numero,
+                                identifiant: foundUser.identifiant,
+                                raison: "Partage de compte détecté"
+                            });
+                            await remove(ref(db, "agents/" + foundUser.name));
+                            errorMessage.textContent = "⚠️ Compte bloqué pour tentative de partage.";
+                        } else {
+                            // ✅ Connexion réussie → enregistrer session
+                            await set(ref(db, "agents/" + foundUser.name + "/sessionActive"), deviceId);
+                            window.location.href = "ok.html"; // redirection vers ta page
+                        }
+                    } else {
+                        errorMessage.textContent = "Numéro ou identifiant incorrect.";
+                    }
+                } else {
+                    errorMessage.textContent = "Base de données vide.";
+                }
+            } catch (error) {
+                errorMessage.textContent = "Erreur de connexion à la base.";
+                console.error(error);
+            }
+        });
+    </script>
+
 </body>
 
 </html>
