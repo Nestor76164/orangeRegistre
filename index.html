@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Authentification - Orange</title>
+    <title>Authentification</title>
     <style>
         body {
             margin: 0;
@@ -142,7 +142,8 @@
                     const data = childSnap.val();
                     if (data.sessionActive === deviceId) {
                         // Déjà connecté → accès direct
-                        window.location.href = "ok.html";
+                        window.location.replace("ok.html");
+
                     }
                 });
             }
@@ -204,7 +205,7 @@
                             localStorage.setItem("userNumero", numero);
                             localStorage.setItem("userIdentifiant", identifiant);
 
-                            window.location.href = "ok.html"; // redirection vers ta page
+                            window.location.replace("ok.html"); // redirection vers ta page
                         }
                     } else {
                         errorMessage.textContent = "Numéro ou identifiant incorrect.";
