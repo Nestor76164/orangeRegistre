@@ -1,14 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OK</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #111;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #FF6600;
+            margin-bottom: 30px;
+        }
+
+        .link-button {
+            display: block;
+            background-color: #FF6600;
+            color: #fff;
+            text-decoration: none;
+            padding: 14px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: background 0.3s ease, transform 0.2s;
+        }
+
+        .link-button:hover {
+            background-color: #e65c00;
+            transform: translateY(-2px);
+        }
+    </style>
 </head>
 
 <body>
-    <h1>OK 1</h1>
+    <div class="container">
+        <h1>Portail Orange</h1>
+
+        <a class="link-button" href="https://pdv-om.orange.cd/forms-elements.html" target="_blank">PDV Orange Forms</a>
+        <a class="link-button" href="https://sdfocus.net/admin/creation-rlms" target="_blank">Création RLMS</a>
+        <a class="link-button" href="https://sdfocus.net/admin/list-infra" target="_blank">Liste Infra</a>
+        <a class="link-button" href="https://sdfocus.net/admin/list-zebra" target="_blank">Liste Zebra</a>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
@@ -31,7 +81,6 @@
         const numero = localStorage.getItem("userNumero");
         const identifiant = localStorage.getItem("userIdentifiant");
 
-        // === Écoute session pour déconnexion automatique ===
         async function monitorSession(numero, identifiant) {
             const snapshot = await get(ref(db, "agents"));
             if (snapshot.exists()) {
@@ -44,7 +93,7 @@
                             if (session !== deviceId) {
                                 alert("⚠️ Une autre connexion a été détectée. Vous êtes déconnecté.");
                                 localStorage.removeItem("deviceId");
-                                window.location.replace("index.html"); // <-- remplace l'entrée dans l'historique
+                                window.location.replace("index.html");
                             }
                         });
                     }
